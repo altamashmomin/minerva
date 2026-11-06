@@ -1,0 +1,37 @@
+txn_id,date,merchant_raw,amount,description_redacted,label,review_status
+T001,2026-09-01,SHOPRITE #101,-54.20,,groceries,verified
+T002,2026-09-02,SHOPRITE #102,-54.20,,groceries,verified
+T003,2026-09-03,SHOPRITE #100,-54.20,,groceries,verified
+T004,2026-09-04,SHOPRITE #101,-54.20,,groceries,verified
+T005,2026-09-05,SHOPRITE #102,-54.20,,groceries,verified
+T006,2026-09-06,SHOPRITE #100,-54.20,,groceries,verified
+T007,2026-09-07,SHOPRITE #101,-54.20,,groceries,verified
+T008,2026-09-08,SHOPRITE #102,-54.20,,groceries,verified
+T009,2026-09-11,SQ *BLUE BOTTLE,-6.75,,dining,verified
+T010,2026-09-12,SQ *BLUE BOTTLE,-6.75,,dining,verified
+T011,2026-09-13,SQ *BLUE BOTTLE,-6.75,,dining,verified
+T012,2026-09-14,SQ *BLUE BOTTLE,-6.75,,dining,verified
+T013,2026-09-15,SQ *BLUE BOTTLE,-6.75,,dining,verified
+T014,2026-09-21,Blue Bottle #4,-7.10,,dining,verified
+T015,2026-09-22,Blue Bottle #4,-7.10,,dining,verified
+T016,2026-09-23,Blue Bottle #4,-7.10,,dining,verified
+T017,2026-10-01,WALGREENS,-12.00,,shopping,verified
+T018,2026-10-02,WALGREENS,-12.00,,groceries,verified
+T019,2026-10-03,WALGREENS,-12.00,,shopping,verified
+T020,2026-10-04,WALGREENS,-12.00,,shopping,verified
+T021,2026-10-06,AMAZON,-30.00,,shopping,verified
+T022,2026-10-07,AMAZON,-30.00,,shopping,verified
+T023,2026-10-08,AMAZON,-30.00,,shopping,verified
+T024,2026-10-09,AMAZON,-30.00,,shopping,verified
+T025,2026-10-11,NJ TRANSIT,-5.90,,transport,verified
+T026,2026-10-12,NJ TRANSIT,-5.90,,transport,verified
+T027,2026-10-15,SHOPRITE #101,-61.00,,groceries,verified
+T028,2026-10-16,SHOPRITE #101,-61.00,,groceries,verified
+T029,2026-10-17,SHOPRITE #101,-61.00,,groceries,verified
+T030,2026-10-18,SHOPRITE #101,-61.00,,groceries,verified
+T031,2026-10-21,SQ *BLUE BOTTLE,-6.75,,dining,verified
+T032,2026-10-22,SQ *BLUE BOTTLE,-6.75,,dining,verified
+T033,2026-10-24,WALGREENS,-9.00,,shopping,verified
+T034,2026-10-25,NJ TRANSIT,-5.90,,transport,verified
+T035,2026-10-26,TST* HALAL GUYS,-14.50,,dining,verified
+T036,2026-10-27,UBER TRIP,-22.00,,transport,imported
