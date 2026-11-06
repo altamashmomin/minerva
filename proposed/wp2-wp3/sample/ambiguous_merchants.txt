@@ -1,0 +1,3 @@
+# merchants whose name and amount don't decide the category
+amazon
+target
