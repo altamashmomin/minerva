@@ -4,8 +4,16 @@
 - Accepted as: a read-only, snapshot-only export; `verified` is a provenance proxy, not adjudicated ground truth (D-009, L1).
 - Test results: 16 of 16 pass (`python3 -m unittest test_export.py` and `python3 test_export.py`); synthetic export runs end-to-end through `accepted/wp2-wp3/evaluate.py`.
 - Accepted files: `accepted/wp1/`, `accepted/wp2-wp3/`. Review history: `proposed/wp1/`, `proposed/wp2-wp3/`. Decisions: D-008, D-009.
-- Next action (Alta, operational, not a work package): on the Ledger Pi make a consistent snapshot (`sqlite3 finance.db ".backup /private/ledger-snapshot.db"`), copy it to a private folder OUTSIDE any Git worktree, run `python3 accepted/wp1/export.py --db <snapshot> --out <fresh private folder>`, then `python3 accepted/wp2-wp3/evaluate.py --data <that folder> --out <private results>`. Share only the counts and metrics, never the CSVs.
-- Next work package: to be agreed after the first real-data run. Candidates: WP4 local model (Ollama on the LLM Pi) behind the WP2 rules; WP1.1 manual adjudication pass on the `verified` set (L1).
+- First real-data run (2026-11-06, Alta, Mac, `python3.13`): `schema_version=22`, 15 categories, **89 labeled spending rows** (77 verified, 12 imported); skipped 42 inflows, 9 settlements, **227 unlabeled (`Other`)**. 72% of spending rows carry no label. WP3 harness result: pending (append when run).
+- Canonical snapshot procedure (Pi has no `sqlite3` CLI; macOS SQLite refuses a read-only open of a WAL-flagged copy):
+  1. On the Pi: `python3 -c "import sqlite3; s=sqlite3.connect('/home/altamash/pifinance/finance.db'); d=sqlite3.connect('/home/altamash/private/ledger-snapshot.db'); s.backup(d); d.execute('PRAGMA journal_mode=DELETE'); d.close(); s.close()"`
+  2. `scp` it to `~/private/` on the Mac (outside any Git worktree).
+  3. `python3.13 accepted/wp1/export.py --db ~/private/ledger-snapshot.db --out ~/private/export-<date>` then `python3.13 accepted/wp2-wp3/evaluate.py --data ~/private/export-<date> --out ~/private/results-<date>`. Apple's `python3` is 3.9 and cannot run the accepted code.
+- **Next work package: WP1.1 — label the backlog** (approved by Alta 2026-11-06; before any WP4 model work). The bottleneck is labels, not models: 89 rows across 15 categories is ~6 per class, below what WP2's `MIN_HISTORY = 3` can use for most merchants.
+  - Code section (four-turn review, read-only over a snapshot, standard library): `backlog.py` groups the unlabeled spending rows by conservatively normalized merchant with count, total cents, and date span, so Alta labels merchant-by-merchant in Ledger's recategorize sheet (one tap relabels all of a merchant's rows via the existing `edit_transaction` verb); it also lists the `verified` rows for the L1 adjudication pass. Output is a private report outside Git; the six-digit mask applies; no Ledger code or schema changes.
+  - Human section (Alta, in Ledger): label the backlog merchant-by-merchant; adjudicate the 77 verified rows.
+  - Done when: a fresh WP1 export shows unlabeled share under 10% of spending rows and the adjudication is recorded as a count in this file; then WP3 reruns and its numbers become the baseline WP4 must beat.
+- After WP1.1: WP4 local model (Ollama on the LLM Pi) behind the WP2 rules.
 
 ## Known limitations carried forward
 - `verified` means "set under a human UI session or manual entry", which includes Ask-tab agent writes the user confirmed (L1). Adjudicate before quoting a real accuracy number.
