@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""MINERVA WP1.1 Turn 1: private backlog and verified-row adjudication report.
+"""MINERVA WP1.1: private backlog and verified-row adjudication report.
 
 Python 3.11+, standard library; run ONLY on Alta's consistent offline snapshot:
     python3.13 proposed/wp1.1/backlog.py --db ~/private/snapshot.db --out ~/private/backlog-new
 Writes backlog.csv and verified.csv in a fresh private folder outside Git.
 total_cents sums Ledger's stored integer cents (outflows are normally positive).
+known_label is the one category this merchant already carries among WP1's
+labeled rows ("" if none, "mixed" if several); it is a hint for Alta, never
+applied. txn_ids are Ledger ids (L-prefixed) so each group is a checklist.
 Verified is WP1's provenance proxy, NOT adjudicated ground truth. Six-digit
 masking is partial, NOT anonymization. Keep real reports out of Git/cloud/chat.
 """
@@ -31,7 +34,8 @@ def _accepted(name, relative):
 wp1 = _accepted("_minerva_wp1", "wp1/export.py")
 wp23 = _accepted("_minerva_wp23", "wp2-wp3/evaluate.py")
 BACKLOG_COLUMNS = ("normalized_merchant", "count", "total_cents", "first_date",
-                   "last_date", "merchant_variants")
+                   "last_date", "known_label", "labeled_count", "txn_ids",
+                   "merchant_variants")
 VERIFIED_COLUMNS = ("txn_id", "date", "merchant_raw", "amount", "category", "review_status")
 
 
@@ -46,6 +50,11 @@ def build(conn):
     masked raw variants so Alta can review merges and find merchants in Ledger.
     """
     labeled, categories, counts = wp1.build(conn)
+    known = {}  # normalized merchant -> {category name: labeled row count}
+    for row in labeled:
+        hits = known.setdefault(wp23.normalize(row["merchant_raw"]), {})
+        name = categories[row["label"]]
+        hits[name] = hits.get(name, 0) + 1
     verified = [{"txn_id": row["txn_id"], "date": row["date"],
                  "merchant_raw": row["merchant_raw"], "amount": row["amount"],
                  "category": mask(categories[row["label"]]),
@@ -61,11 +70,16 @@ def build(conn):
             continue
         raw = mask(txn["description"])
         key = wp23.normalize(raw)
+        hits = known.get(key, {})
         group = groups.setdefault(key, {
             "normalized_merchant": key, "count": 0, "total_cents": 0,
             "first_date": txn["txn_date"], "last_date": txn["txn_date"],
+            "known_label": mask(next(iter(hits))) if len(hits) == 1 else
+                           ("mixed" if hits else ""),
+            "labeled_count": sum(hits.values()), "txn_ids": [],
             "merchant_variants": set()})
         group["count"] += 1
+        group["txn_ids"].append(f"L{txn['id']}")
         group["total_cents"] += txn["amount_cents"]
         group["first_date"] = min(group["first_date"], txn["txn_date"])
         group["last_date"] = max(group["last_date"], txn["txn_date"])
@@ -73,6 +87,7 @@ def build(conn):
     backlog = sorted(groups.values(), key=lambda group: (-group["count"],
                                                         group["normalized_merchant"]))
     for group in backlog:
+        group["txn_ids"] = json.dumps(group["txn_ids"])
         group["merchant_variants"] = json.dumps(sorted(group["merchant_variants"]),
                                                 ensure_ascii=False)
     return backlog, verified, counts
@@ -110,7 +125,9 @@ def main(argv=None):
     finally:
         conn.close()
     write(args.out, backlog, verified)
-    print(f"schema_version={version} merchants={len(backlog)} verified={len(verified)}")
+    hinted = sum(1 for group in backlog if group["known_label"] not in ("", "mixed"))
+    print(f"schema_version={version} merchants={len(backlog)} hinted={hinted} "
+          f"verified={len(verified)}")
     for key in sorted(counts):
         print(f"  {key}={counts[key]}")
 

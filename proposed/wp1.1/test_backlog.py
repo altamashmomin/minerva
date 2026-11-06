@@ -67,6 +67,24 @@ class Backlog(unittest.TestCase):
         self.assertEqual(verified, [])
         self.assertEqual(counts["skipped_unlabeled"], 5)
 
+    def test_known_label_hint_and_txn_ids_per_group(self):
+        groups, _, _ = self.build([
+            row(1, cat="Transport", desc="WAWA #1", day="2026-08-01"),
+            row(2, cat="Transport", src="manual", desc="WAWA #2", day="2026-08-02"),
+            row(3, desc="WAWA #3", day="2026-09-01"), row(4, desc="WAWA #4", day="2026-09-02"),
+            row(5, cat="Dining", desc="CAFE", day="2026-08-01"),
+            row(6, cat="Groceries", desc="CAFE", day="2026-08-02"),
+            row(7, desc="CAFE", day="2026-09-01"),
+            row(8, desc="NEW PLACE", day="2026-09-01")])
+        by = {g["normalized_merchant"]: g for g in groups}
+        self.assertEqual((by["wawa"]["known_label"], by["wawa"]["labeled_count"]),
+                         ("Transport", 2))
+        self.assertEqual(json.loads(by["wawa"]["txn_ids"]), ["L3", "L4"])
+        self.assertEqual((by["cafe"]["known_label"], by["cafe"]["labeled_count"]), ("mixed", 2))
+        self.assertEqual((by["new place"]["known_label"], by["new place"]["labeled_count"]),
+                         ("", 0))
+        self.assertEqual(json.loads(by["new place"]["txn_ids"]), ["L8"])
+
     def test_filters_apply_before_backlog_and_verification(self):
         groups, verified, counts = self.build([
             row(1), row(2, cat="Other", direction="in"), row(3, cat="", transfer=1),
@@ -190,7 +208,7 @@ class Backlog(unittest.TestCase):
         console = io.StringIO()
         with contextlib.redirect_stdout(console):
             bl.main(["--db", str(snapshot), "--out", str(out)])
-        self.assertEqual(console.getvalue(), "schema_version=22 merchants=1 verified=1\n"
+        self.assertEqual(console.getvalue(), "schema_version=22 merchants=1 hinted=0 verified=1\n"
                          "  exported_verified=1\n  skipped_unlabeled=1\n")
         self.assertEqual(stat.S_IMODE(out.stat().st_mode), 0o700)
         for filename in ("backlog.csv", "verified.csv"):

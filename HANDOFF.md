@@ -10,21 +10,17 @@
   2. `scp` it to `~/private/` on the Mac (outside any Git worktree).
   3. `python3.13 accepted/wp1/export.py --db ~/private/ledger-snapshot.db --out ~/private/export-<date>` then `python3.13 accepted/wp2-wp3/evaluate.py --data ~/private/export-<date> --out ~/private/results-<date>`. Apple's `python3` is 3.9 and cannot run the accepted code.
 - **Next work package: WP1.1 — label the backlog** (approved by Alta 2026-11-06; before any WP4 model work). The bottleneck is labels, not models: 89 rows across 15 categories is ~6 per class, below what WP2's `MIN_HISTORY = 3` can use for most merchants.
-  - Code section (four-turn review, read-only over a snapshot, standard library): `backlog.py` groups the unlabeled spending rows by conservatively normalized merchant with count, total cents, and date span, so Alta labels merchant-by-merchant in Ledger's recategorize sheet (one tap relabels all of a merchant's rows via the existing `edit_transaction` verb); it also lists the `verified` rows for the L1 adjudication pass. Output is a private report outside Git; the six-digit mask applies; no Ledger code or schema changes.
+  - Code section (four-turn review, read-only over a snapshot, standard library): `backlog.py` groups the unlabeled spending rows by conservatively normalized merchant with count, total cents, and date span, so Alta labels merchant-by-merchant in Ledger (the recategorize sheet reads `/api/activity?category=Other`; each group's `txn_ids` is the checklist); it also lists the `verified` rows for the L1 adjudication pass. Output is a private report outside Git; the six-digit mask applies; no Ledger code or schema changes.
   - Human section (Alta, in Ledger): label the backlog merchant-by-merchant; adjudicate the 77 verified rows.
   - Done when: a fresh WP1 export shows unlabeled share under 10% of spending rows and the adjudication is recorded as a count in this file; then WP3 reruns and its numbers become the baseline WP4 must beat.
 - After WP1.1: WP4 local model (Ollama on the LLM Pi) behind the WP2 rules.
 
-## WP1.1 Turn 1 — proposed (2026-11-06)
+## WP1.1 in review (2026-11-06)
 
-- Draft: `proposed/wp1.1/backlog.py` and `test_backlog.py`; pending Claude's Turn 2 review. No accepted checkpoint or decision record yet.
-- Reuses `accepted/wp1/export.py` for read-only snapshot opening, schema checks, and the exact verified provenance selection, and `accepted/wp2-wp3/evaluate.py::normalize` for grouping. No production access or real financial data used.
-- `backlog.csv`: unlabeled spending only (stripped category blank/`Other`, direction `out`, no transfer or settlement), grouped after WP1's six-digit mask, sorted count descending then normalized merchant. Columns: normalized merchant, count, sum of stored integer cents, first/last date, JSON list of masked merchant variants for merge review. Stored cent signs are preserved.
-- `verified.csv`: WP1's labeled spending rows marked `verified`, with transaction ID, date, masked merchant, WP1's negative decimal amount, masked category name, and provenance status. This is the L1 adjudication queue, not adjudicated ground truth.
-- Output: fresh folder only, outside Git/worktrees, directory mode 0700 and files 0600. Refuses `finance.db` (including resolved aliases), symlink output directories, existing output folders/files, and dangling output symlinks; exclusive file creation. Standard library, Python 3.11+; prints only schema and counts.
-- Validation: Python 3.13.18, 13/13 synthetic WP1.1 tests pass via both `python3.13 -m unittest -v test_backlog.py` and `python3.13 test_backlog.py` in `proposed/wp1.1`; accepted WP1 16/16 and WP2/WP3 21/21 regression tests pass. Accepted WP1 tests emit existing unclosed-fixture-connection ResourceWarnings under 3.13; accepted code/tests were not changed.
-- Invocation for Alta on a consistent offline snapshot: `python3.13 proposed/wp1.1/backlog.py --db ~/private/ledger-snapshot.db --out ~/private/backlog-<fresh-name>`. Creating/copying the snapshot and all Ledger labeling/adjudication remain Alta's steps.
-- Handoff to Alta: Turn 1 is one local commit and is **not pushed**. Alta must push before relaying to Claude for Turn 2; the other AI cannot see an unpushed turn. The existing WP1.1 completion criteria and baseline remain unchanged.
+- Turn 1 (ChatGPT, `049e95a`): `proposed/wp1.1/backlog.py` + `test_backlog.py` — grouped backlog + verified adjudication queue, reusing `accepted/wp1/export.py` and `accepted/wp2-wp3/evaluate.py::normalize`; 13/13.
+- Turn 2 (Claude): `proposed/wp1.1/TURN2-wp1.1-for-chatgpt.md`. Keeps the design; adds `known_label` / `labeled_count` (the category a merchant already carries among labeled rows — a hint, never applied) and `txn_ids` per group (L-prefixed, so each group is a checklist); corrects the HANDOFF claim about one-tap relabeling. 14/14 on Python 3.13.18 via both invocations; accepted WP1 16/16 and WP2/WP3 21/21 unchanged; new tests proven to fail against Turn 1.
+- Next: ChatGPT Turn 3 in reply, then Turn 4 consensus and Alta's sign-off. No accepted checkpoint or decision record yet. Turn 2 is one local commit, **not pushed** — Alta pushes before relaying.
+- Invocation on a consistent offline snapshot (unchanged): `python3.13 proposed/wp1.1/backlog.py --db ~/private/ledger-snapshot.db --out ~/private/backlog-<fresh-name>`.
 
 ## Known limitations carried forward
 - `verified` means "set under a human UI session or manual entry", which includes Ask-tab agent writes the user confirmed (L1). Adjudicate before quoting a real accuracy number.
