@@ -5,9 +5,10 @@ Python 3.11+, standard library; run ONLY on Alta's consistent offline snapshot:
     python3.13 proposed/wp1.1/backlog.py --db ~/private/snapshot.db --out ~/private/backlog-new
 Writes backlog.csv and verified.csv in a fresh private folder outside Git.
 total_cents sums Ledger's stored integer cents (outflows are normally positive).
-known_label is the one category this merchant already carries among WP1's
-labeled rows ("" if none, "mixed" if several); it is a hint for Alta, never
-applied. txn_ids are Ledger ids (L-prefixed) so each group is a checklist.
+known_label shows a masked category when all of the merchant's WP1 labels agree.
+A blank with labeled_count zero means no history. A blank with a positive count
+means conflicting labels. Both imported and verified labels count. Alta reviews
+each hint. txn_ids lists the group's L-prefixed Ledger IDs by date, then numeric ID.
 Verified is WP1's provenance proxy, NOT adjudicated ground truth. Six-digit
 masking is partial, NOT anonymization. Keep real reports out of Git/cloud/chat.
 """
@@ -70,14 +71,10 @@ def build(conn):
             continue
         raw = mask(txn["description"])
         key = wp23.normalize(raw)
-        hits = known.get(key, {})
         group = groups.setdefault(key, {
             "normalized_merchant": key, "count": 0, "total_cents": 0,
             "first_date": txn["txn_date"], "last_date": txn["txn_date"],
-            "known_label": mask(next(iter(hits))) if len(hits) == 1 else
-                           ("mixed" if hits else ""),
-            "labeled_count": sum(hits.values()), "txn_ids": [],
-            "merchant_variants": set()})
+            "txn_ids": [], "merchant_variants": set()})
         group["count"] += 1
         group["txn_ids"].append(f"L{txn['id']}")
         group["total_cents"] += txn["amount_cents"]
@@ -87,6 +84,9 @@ def build(conn):
     backlog = sorted(groups.values(), key=lambda group: (-group["count"],
                                                         group["normalized_merchant"]))
     for group in backlog:
+        hits = known.get(group["normalized_merchant"], {})
+        group["known_label"] = mask(next(iter(hits))) if len(hits) == 1 else ""
+        group["labeled_count"] = sum(hits.values())
         group["txn_ids"] = json.dumps(group["txn_ids"])
         group["merchant_variants"] = json.dumps(sorted(group["merchant_variants"]),
                                                 ensure_ascii=False)
@@ -125,7 +125,7 @@ def main(argv=None):
     finally:
         conn.close()
     write(args.out, backlog, verified)
-    hinted = sum(1 for group in backlog if group["known_label"] not in ("", "mixed"))
+    hinted = sum(1 for group in backlog if group["known_label"])
     print(f"schema_version={version} merchants={len(backlog)} hinted={hinted} "
           f"verified={len(verified)}")
     for key in sorted(counts):

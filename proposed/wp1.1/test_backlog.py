@@ -64,6 +64,7 @@ class Backlog(unittest.TestCase):
                          (3, 580, "2026-08-01", "2026-09-20"))
         self.assertEqual(json.loads(groups[0]["merchant_variants"]),
                          ["BLUE BOTTLE #12", "Blue Bottle #4", "SQ *BLUE BOTTLE"])
+        self.assertEqual(json.loads(groups[0]["txn_ids"]), ["L2", "L3", "L1"])
         self.assertEqual(verified, [])
         self.assertEqual(counts["skipped_unlabeled"], 5)
 
@@ -71,7 +72,8 @@ class Backlog(unittest.TestCase):
         groups, _, _ = self.build([
             row(1, cat="Transport", desc="WAWA #1", day="2026-08-01"),
             row(2, cat="Transport", src="manual", desc="WAWA #2", day="2026-08-02"),
-            row(3, desc="WAWA #3", day="2026-09-01"), row(4, desc="WAWA #4", day="2026-09-02"),
+            row(12, desc="WAWA #12", day="2026-09-01"), row(3, desc="WAWA #3", day="2026-09-01"),
+            row(4, desc="WAWA #4", day="2026-09-02"),
             row(5, cat="Dining", desc="CAFE", day="2026-08-01"),
             row(6, cat="Groceries", desc="CAFE", day="2026-08-02"),
             row(7, desc="CAFE", day="2026-09-01"),
@@ -79,11 +81,28 @@ class Backlog(unittest.TestCase):
         by = {g["normalized_merchant"]: g for g in groups}
         self.assertEqual((by["wawa"]["known_label"], by["wawa"]["labeled_count"]),
                          ("Transport", 2))
-        self.assertEqual(json.loads(by["wawa"]["txn_ids"]), ["L3", "L4"])
-        self.assertEqual((by["cafe"]["known_label"], by["cafe"]["labeled_count"]), ("mixed", 2))
+        self.assertEqual(json.loads(by["wawa"]["txn_ids"]), ["L3", "L12", "L4"])
+        self.assertEqual((by["cafe"]["known_label"], by["cafe"]["labeled_count"]), ("", 2))
         self.assertEqual((by["new place"]["known_label"], by["new place"]["labeled_count"]),
                          ("", 0))
         self.assertEqual(json.loads(by["new place"]["txn_ids"]), ["L8"])
+
+    def test_cli_distinguishes_literal_mixed_and_masked_label_conflicts(self):
+        snapshot = self.database([
+            row(1, cat="mixed", desc="SOLO"), row(2, cat="mixed", desc="SOLO"),
+            row(3, desc="SOLO"), row(4, cat="Tag 123456", desc="SPLIT"),
+            row(5, cat="Tag 654321", desc="SPLIT"), row(6, desc="SPLIT"),
+            row(7, cat="Tag 123456", desc="TAGGED"), row(8, desc="TAGGED")])
+        out = self.root / "hints"
+        console = io.StringIO()
+        with contextlib.redirect_stdout(console):
+            bl.main(["--db", str(snapshot), "--out", str(out)])
+        with (out / "backlog.csv").open(encoding="utf-8", newline="") as stream:
+            hints = {g["normalized_merchant"]: (g["known_label"], g["labeled_count"])
+                     for g in csv.DictReader(stream)}
+        self.assertEqual(hints, {"solo": ("mixed", "2"), "split": ("", "2"),
+                                 "tagged": ("Tag #", "1")})
+        self.assertIn("merchants=3 hinted=2 verified=0", console.getvalue())
 
     def test_filters_apply_before_backlog_and_verification(self):
         groups, verified, counts = self.build([
@@ -94,6 +113,7 @@ class Backlog(unittest.TestCase):
             row(9, cat="Dining", src="manual", transfer=1),
             row(10, cat="Settlement", src="manual")])
         self.assertEqual(sum(g["count"] for g in groups), 1)
+        self.assertEqual(json.loads(groups[0]["txn_ids"]), ["L1"])
         self.assertEqual([r["txn_id"] for r in verified], ["L7"])
         self.assertEqual(counts, {"skipped_unlabeled": 1, "skipped_inflow": 2,
                                  "skipped_transfer": 2, "skipped_settlement": 3,

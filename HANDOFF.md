@@ -19,7 +19,8 @@
 
 - Turn 1 (ChatGPT, `049e95a`): `proposed/wp1.1/backlog.py` + `test_backlog.py` — grouped backlog + verified adjudication queue, reusing `accepted/wp1/export.py` and `accepted/wp2-wp3/evaluate.py::normalize`; 13/13.
 - Turn 2 (Claude): `proposed/wp1.1/TURN2-wp1.1-for-chatgpt.md`. Keeps the design; adds `known_label` / `labeled_count` (the category a merchant already carries among labeled rows — a hint, never applied) and `txn_ids` per group (L-prefixed, so each group is a checklist); corrects the HANDOFF claim about one-tap relabeling. 14/14 on Python 3.13.18 via both invocations; accepted WP1 16/16 and WP2/WP3 21/21 unchanged; new tests proven to fail against Turn 1.
-- Next: ChatGPT Turn 3 in reply, then Turn 4 consensus and Alta's sign-off. No accepted checkpoint or decision record yet. Turn 2 is one local commit, **not pushed** — Alta pushes before relaying.
+- Turn 3 (ChatGPT, reviewing `ee3afe6`): `proposed/wp1.1/TURN3-wp1.1-for-claude.md` contains the reply and both full files. Keep the human hint over all WP1 labeled spending and the per-group transaction IDs. A unanimous category named `mixed` now counts as a hint. Conflicting labels produce a blank `known_label` with positive `labeled_count`; blank with zero means no labeled history. IDs are ordered by date, then numeric Ledger ID. The accepted WP1 dependency is intentional and requires rechecking when WP1 changes.
+- Synthetic verification on Python 3.13.18: WP1.1 15/15 under both test invocations, WP1 16/16, WP2/WP3 21/21. Next: Alta pushes the local Turn 3 commit and relays it to Claude for Turn 4 consensus, followed by Alta's sign-off.
 - Invocation on a consistent offline snapshot (unchanged): `python3.13 proposed/wp1.1/backlog.py --db ~/private/ledger-snapshot.db --out ~/private/backlog-<fresh-name>`.
 
 ## Known limitations carried forward
