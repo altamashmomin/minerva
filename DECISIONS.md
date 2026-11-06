@@ -14,6 +14,7 @@ Each completed four-turn review adds a record under `decisions/` and a line here
 | D-007 | 2026-11-06 | GitHub repo is the source of truth; proposed code kept apart from accepted | Agree | No dependence on AI chat memory |
 | D-008 | 2026-11-06 | WP2/WP3 accepted as synthetic-data evaluation baseline (`wp2-wp3-accepted-v1`) | Agree with limitation | Turn 4 consensus; see decisions/D-008 |
 | D-009 | 2026-11-06 | WP1 dataset export accepted; `verified` is a provenance proxy (`wp1-accepted-v1`) | Agree with limitation | Turn 4 consensus, Alta approved; see decisions/D-009 |
+| D-010 | 2026-11-06 | WP1.1 backlog report accepted; `known_label` is a human hint, never applied (`wp1.1-accepted-v1`) | Agree with limitation | Turn 4 consensus, Alta approved; see decisions/D-010 |
 
 ## Open
 - Handling of ambiguous merchants beyond abstention (parked).

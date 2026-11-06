@@ -1,9 +1,9 @@
 # Handoff
 
-- Last accepted: WP1 dataset export, tag `wp1-accepted-v1` (2026-11-06). Previous: WP2/WP3, tag `wp2-wp3-accepted-v1`, commit `1b5eeb9`.
+- Last accepted: WP1.1 backlog report, tag `wp1.1-accepted-v1` (2026-11-06). Previous: WP1 `wp1-accepted-v1`; WP2/WP3 `wp2-wp3-accepted-v1` (`1b5eeb9`).
 - Accepted as: a read-only, snapshot-only export; `verified` is a provenance proxy, not adjudicated ground truth (D-009, L1).
 - Test results: 16 of 16 pass (`python3 -m unittest test_export.py` and `python3 test_export.py`); synthetic export runs end-to-end through `accepted/wp2-wp3/evaluate.py`.
-- Accepted files: `accepted/wp1/`, `accepted/wp2-wp3/`. Review history: `proposed/wp1/`, `proposed/wp2-wp3/`. Decisions: D-008, D-009.
+- Accepted files: `accepted/wp1.1/`, `accepted/wp1/`, `accepted/wp2-wp3/`. Review history: `proposed/wp1.1/`, `proposed/wp1/`, `proposed/wp2-wp3/`. Decisions: D-008, D-009, D-010.
 - First real-data run (2026-11-06, Alta, Mac, `python3.13`): `schema_version=22`, 15 categories, **89 labeled spending rows** (77 verified, 12 imported); skipped 42 inflows, 9 settlements, **227 unlabeled (`Other`)**. 72% of spending rows carry no label. WP3 harness result (`python3.13`, MIN_HISTORY=3, TEST_FRACTION=0.3): temporal split train=53/test=24 — accepted 3/24 (coverage 12.5%), precision 100% (95% Wilson 43.9–100%), false acceptance 0%; abstentions: 12 unseen merchants, 9 insufficient history. Merchant-grouped split train=66/test=11 — 0 accepted (all test merchants unseen by construction). Three normalization merges flagged for Alta's review (case/store-number variants). Test true labels are dining-heavy (15/24). **This is the baseline WP4 must beat.**
 - Canonical snapshot procedure (Pi has no `sqlite3` CLI; macOS SQLite refuses a read-only open of a WAL-flagged copy):
   1. On the Pi: `python3 -c "import sqlite3; s=sqlite3.connect('/home/altamash/pifinance/finance.db'); d=sqlite3.connect('/home/altamash/private/ledger-snapshot.db'); s.backup(d); d.execute('PRAGMA journal_mode=DELETE'); d.close(); s.close()"`
@@ -15,15 +15,17 @@
   - Done when: a fresh WP1 export shows unlabeled share under 10% of spending rows and the adjudication is recorded as a count in this file; then WP3 reruns and its numbers become the baseline WP4 must beat.
 - After WP1.1: WP4 local model (Ollama on the LLM Pi) behind the WP2 rules.
 
-## WP1.1 in review (2026-11-06)
+## WP1.1 — code accepted; human half in progress (2026-11-06)
 
-- Turn 1 (ChatGPT, `049e95a`): `proposed/wp1.1/backlog.py` + `test_backlog.py` — grouped backlog + verified adjudication queue, reusing `accepted/wp1/export.py` and `accepted/wp2-wp3/evaluate.py::normalize`; 13/13.
-- Turn 2 (Claude): `proposed/wp1.1/TURN2-wp1.1-for-chatgpt.md`. Keeps the design; adds `known_label` / `labeled_count` (the category a merchant already carries among labeled rows — a hint, never applied) and `txn_ids` per group (L-prefixed, so each group is a checklist); corrects the HANDOFF claim about one-tap relabeling. 14/14 on Python 3.13.18 via both invocations; accepted WP1 16/16 and WP2/WP3 21/21 unchanged; new tests proven to fail against Turn 1.
-- Turn 3 (ChatGPT, reviewing `ee3afe6`): `proposed/wp1.1/TURN3-wp1.1-for-claude.md` contains the reply and both full files. Keep the human hint over all WP1 labeled spending and the per-group transaction IDs. A unanimous category named `mixed` now counts as a hint. Conflicting labels produce a blank `known_label` with positive `labeled_count`; blank with zero means no labeled history. IDs are ordered by date, then numeric Ledger ID. The accepted WP1 dependency is intentional and requires rechecking when WP1 changes.
-- Turn 4 (Claude, consensus): `proposed/wp1.1/TURN4-consensus.md` — all Turn 2/3 positions agreed; independent verification 15/15 (both invocations, ResourceWarning as error), WP1 16/16, WP2/WP3 21/21; limitations L7 (coupling to accepted WP1) and L8 (hint is not a prediction) drafted into D-010. **Next: Alta's sign-off**, then acceptance mechanics (copy to `accepted/wp1.1/`, tag `wp1.1-accepted-v1`, D-010), then the human labeling pass.
-- Invocation on a consistent offline snapshot (unchanged): `python3.13 proposed/wp1.1/backlog.py --db ~/private/ledger-snapshot.db --out ~/private/backlog-<fresh-name>`.
+- Code: `accepted/wp1.1/backlog.py`, 15/15, D-010, tag `wp1.1-accepted-v1`. Review history `proposed/wp1.1/` (Turns 1–4).
+- Alta's steps (Mac, `python3.13`, fresh snapshot per the canonical procedure above):
+  1. `python3.13 accepted/wp1.1/backlog.py --db ~/private/ledger-snapshot.db --out ~/private/backlog-<date>` → `backlog.csv` (merchant groups, `known_label` hint, `txn_ids` checklist) and `verified.csv` (the L1 adjudication queue). Private; never Git/chat.
+  2. In Ledger, label the backlog merchant-by-merchant (hinted groups first), ticking the rows in `txn_ids`; adjudicate `verified.csv`.
+  3. Re-snapshot, re-export with WP1, rerun WP3. Record here: unlabeled share, adjudicated count, and the new WP3 numbers (the WP4 baseline).
+- Done when unlabeled share is under 10% of spending rows and the adjudication count is recorded. Then WP4 (local model on the LLM Pi behind the WP2 rules); Turn 1 drafter to be agreed.
 
 ## Known limitations carried forward
+- `backlog.py` is coupled by path to accepted WP1 and WP2/WP3; rerun its suite whenever they change (L7). `known_label` is a hint, not a prediction (L8).
 - `verified` means "set under a human UI session or manual entry", which includes Ask-tab agent writes the user confirmed (L1). Adjudicate before quoting a real accuracy number.
 - `merge_category` relabels without per-row audit (L2); category IDs change on rename (L5).
 - Six-digit masking is partial; real exports never enter Git, chat, or fixtures (L3).
