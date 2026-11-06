@@ -1,6 +1,6 @@
 # Handoff
 
-- Last accepted: WP2 rules baseline + WP3 evaluation harness, tag `wp2-wp3-accepted-v1`, commit `HASH` (2026-11-06).
+- Last accepted: WP2 rules baseline + WP3 evaluation harness, tag `wp2-wp3-accepted-v1`, commit `1b5eeb9` (2026-11-06).
 - Accepted as: a synthetic-data evaluation baseline, not validated production classification software.
 - Test results: 21 of 21 pass (`python3 -m unittest test_evaluate.py` and `python3 test_evaluate.py`); end-to-end sample report runs on both splits.
 - Accepted files: `accepted/wp2-wp3/`. Review history: `proposed/wp2-wp3/`. Decision: D-008.
