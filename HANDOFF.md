@@ -24,6 +24,13 @@
   3. Re-snapshot, re-export with WP1, rerun WP3. Record here: unlabeled share, adjudicated count, and the new WP3 numbers (the WP4 baseline).
 - Done when unlabeled share is under 10% of spending rows and the adjudication count is recorded. Then WP4 (local model on the LLM Pi behind the WP2 rules); Turn 1 drafter to be agreed.
 
+## Informal pre-WP4 benchmark (2026-11-06, Alta, MacBook Pro M1 Pro, Ollama 0.40.14) — not a WP4 result
+- Prompt: single ShopRite transaction, JSON-only answer, eight fixed categories. Warm-model numbers.
+- `gemma3:1b`: correct, 22 tokens, ~0.9 s, 68 tok/s. `qwen3:1.7b --think=false`: correct, 20 tokens, 0.33 s, 74 tok/s.
+- `qwen3:4b --think=false`: correct but the flag did not suppress thinking (766–2189 output tokens, 26–65 s, 29–34 tok/s; the tag likely resolves to a thinking-only 2507 build — unverified). Unusable under the 5-second budget without constrained JSON output (Ollama `format`), which WP4 should test rather than assume.
+- The spare Pi turned out to be a Pi 4 B 8GB with no cooling; its benchmark was skipped as unrepresentative. The inference target remains a Pi 5 8GB (not yet purchased). Expect Pi 5 throughput at roughly a third of the Mac figures.
+- Implications for WP4 scope: measure the 1B/1.7B class first; treat the 4B as a conditional candidate for unseen merchants; make schema-constrained output a first-class variable; keep-alive matters (cold load was 1.5–15 s).
+
 ## Known limitations carried forward
 - `backlog.py` is coupled by path to accepted WP1 and WP2/WP3; rerun its suite whenever they change (L7). `known_label` is a hint, not a prediction (L8).
 - `verified` means "set under a human UI session or manual entry", which includes Ask-tab agent writes the user confirmed (L1). Adjudicate before quoting a real accuracy number.
