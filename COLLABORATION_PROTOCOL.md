@@ -27,3 +27,16 @@ This repository. Neither AI's conversational memory is a dependency. Each turn s
 1. An accepted code checkpoint: files copied to `accepted/<wp>/`, committed, tagged `wpN-accepted-vX`.
 2. A brief decision record in `decisions/` and a line in `DECISIONS.md`.
 3. An updated `HANDOFF.md`.
+
+## Git discipline (both AIs share one working copy on Alta's machine)
+- Before any work: `git pull --ff-only origin main`. If it refuses, stop and
+  tell Alta — never force, rebase, or reset the shared copy on your own.
+- Work only in `proposed/<wp>/` on `main`. No long-lived branches between
+  turns; a turn is one commit.
+- Before committing: run the section's tests in the working copy and state
+  the result in the commit message.
+- Commit the turn as soon as it is complete, then `git push origin main`
+  immediately. A turn that is not pushed does not exist for the other AI.
+- Never leave uncommitted edits behind for the other AI to find. If a turn
+  is abandoned, `git stash` it under a named message and say so in `HANDOFF.md`.
+- `git status` must be clean at the end of every turn.
