@@ -172,7 +172,13 @@ class Export(unittest.TestCase):
             ex.write(root / "exports", [], {})
         out = Path(tempfile.mkdtemp())
         (out / "labeled.csv").symlink_to(out / "target.csv")
-        with self.assertRaisesRegex(ValueError, "symlink"):
+        with self.assertRaisesRegex(ValueError, "refusing to overwrite"):
+            ex.write(out, [], {})
+
+    def test_refuses_to_overwrite_existing_export(self):
+        out = Path(tempfile.mkdtemp()) / "fresh"
+        ex.write(out, [], {})
+        with self.assertRaisesRegex(ValueError, "refusing to overwrite"):
             ex.write(out, [], {})
 
     def test_output_loads_in_accepted_harness(self):

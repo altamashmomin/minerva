@@ -133,19 +133,19 @@ def build(conn):
 
 
 def write(out_dir, rows, categories):
-    """Keep potentially sensitive exports outside any Git worktree."""
+    """Write to a fresh private folder; never inside Git, never over existing files."""
     out = Path(out_dir).expanduser().resolve()
     if any((parent / ".git").exists() for parent in (out, *out.parents)):
         raise ValueError("financial exports must be written outside Git repositories")
     for name in ("labeled.csv", "categories.csv"):
-        if (out / name).is_symlink():
-            raise ValueError(f"refusing symlink output {out / name}")
+        if (out / name).is_symlink() or (out / name).exists():
+            raise ValueError(f"refusing to overwrite {out / name}; use a fresh folder")
     out.mkdir(parents=True, exist_ok=True, mode=0o700)
-    with open(out / "labeled.csv", "w", newline="", encoding="utf-8") as f:
+    with open(out / "labeled.csv", "x", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=COLUMNS)
         writer.writeheader()
         writer.writerows(rows)
-    with open(out / "categories.csv", "w", newline="", encoding="utf-8") as f:
+    with open(out / "categories.csv", "x", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["category_id", "name"])
         writer.writerows(sorted(categories.items()))
